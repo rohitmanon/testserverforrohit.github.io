@@ -14,7 +14,7 @@
             margin-top: 10px;
         }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/quagga"></script>
+    <script src="https://rawgit.com/serratus/quaggaJS/gh-pages/dist/quagga.min.js"></script>
 </head>
 <body>
     <h1>Barcode Scanner Demo</h1>
@@ -24,22 +24,26 @@
     <div id="result"></div>
 
     <script>
+        const video = document.getElementById('barcode-scanner');
+        const resultElement = document.getElementById('result');
+
         Quagga.init({
             inputStream: {
-                name: "Live",
-                type: "LiveStream",
-                target: document.querySelector("#barcode-scanner"),
+                name: 'Live',
+                type: 'LiveStream',
+                target: video,
                 constraints: {
                     width: 600,
                     height: 400,
+                    facingMode: 'environment', // Use 'environment' for rear camera
                 },
             },
             decoder: {
-                readers: ["ean_reader", "code_128_reader"],
+                readers: ['code_128_reader', 'upc_reader', 'code_39_reader', 'ean_13_reader'],
             },
         }, function(err) {
             if (err) {
-                console.error("Error initializing Quagga: ", err);
+                console.error('Error initializing Quagga: ', err);
                 return;
             }
             Quagga.start();
@@ -47,9 +51,10 @@
 
         Quagga.onDetected(function(result) {
             const code = result.codeResult.code;
-            const resultElement = document.querySelector("#result");
+            const resultElement = document.querySelector('#result');
             resultElement.textContent = `Detected Barcode: ${code}`;
         });
     </script>
 </body>
 </html>
+
