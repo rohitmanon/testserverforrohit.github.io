@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barcode Scanner Demo</title>
+    <style>
+        #barcode-scanner {
+            width: 100%;
+            height: auto;
+            max-width: 600px;
+        }
+        #result {
+            margin-top: 10px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/quagga"></script>
+</head>
+<body>
+    <h1>Barcode Scanner Demo</h1>
+    <p>Scan a barcode and see the result below:</p>
+
+    <video id="barcode-scanner" autoplay playsinline></video>
+    <div id="result"></div>
+
+    <script>
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: document.querySelector("#barcode-scanner"),
+                constraints: {
+                    width: 600,
+                    height: 400,
+                },
+            },
+            decoder: {
+                readers: ["ean_reader", "code_128_reader"],
+            },
+        }, function(err) {
+            if (err) {
+                console.error("Error initializing Quagga: ", err);
+                return;
+            }
+            Quagga.start();
+        });
+
+        Quagga.onDetected(function(result) {
+            const code = result.codeResult.code;
+            const resultElement = document.querySelector("#result");
+            resultElement.textContent = `Detected Barcode: ${code}`;
+        });
+    </script>
+</body>
+</html>
