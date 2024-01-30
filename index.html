@@ -3,57 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Barcode Scanner Demo</title>
-    <style>
-        #barcode-scanner {
-            width: 100%;
-            height: auto;
-            max-width: 600px;
-        }
-        #result {
-            margin-top: 10px;
-        }
-    </style>
-    <script src="https://rawgit.com/serratus/quaggaJS/gh-pages/dist/quagga.min.js"></script>
+    <title>ID Card OCR</title>
+    <script src="https://cdn.rawgit.com/naptha/tesseract.js/1.0.10/dist/tesseract.js"></script>
 </head>
 <body>
-    <h1>Barcode Scanner Demo</h1>
-    <p>Scan a barcode and see the result below:</p>
-
-    <video id="barcode-scanner" autoplay playsinline></video>
-    <div id="result"></div>
+    <input type="file" id="fileInput" accept="image/*">
+    <div id="output"></div>
 
     <script>
-        const video = document.getElementById('barcode-scanner');
-        const resultElement = document.getElementById('result');
+        document.getElementById('fileInput').addEventListener('change', handleFile);
 
-        Quagga.init({
-            inputStream: {
-                name: 'Live',
-                type: 'LiveStream',
-                target: video,
-                constraints: {
-                    width: 600,
-                    height: 400,
-                    facingMode: 'environment', // Use 'environment' for rear camera
-                },
-            },
-            decoder: {
-                readers: ['code_128_reader', 'upc_reader', 'code_39_reader', 'ean_13_reader'],
-            },
-        }, function(err) {
-            if (err) {
-                console.error('Error initializing Quagga: ', err);
-                return;
+        function handleFile(event) {
+            const file = event.target.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    const imageSrc = e.target.result;
+
+                    recognizeText(imageSrc).then((result) => {
+                        displayResult(result);
+                    }).catch((error) => {
+                        console.error('Error recognizing text:', error);
+                    });
+                };
+
+                reader.readAsDataURL(file);
             }
-            Quagga.start();
-        });
+        }
 
-        Quagga.onDetected(function(result) {
-            const code = result.codeResult.code;
-            const resultElement = document.querySelector('#result');
-            resultElement.textContent = `Detected Barcode: ${code}`;
-        });
+        function recognizeText(imageSrc) {
+            return Tesseract.recognize(
+                imageSrc,
+                'eng', // Language code (English in this case)
+                {
+                    logger: info => console.log(info),
+                }
+            );
+        }
+
+        function displayResult(result) {
+            const outputElement = document.getElementById('output');
+            outputElement.innerHTML = '';
+
+            if (result && result.data && result.data.text) {
+                const text = result.data.text;
+                const lines = text.split('\n');
+
+                // Extracting relevant information
+                let name = '';
+                let branch = '';
+                let admissionNumber = '';
+
+                lines.forEach(line => {
+                    if (line.includes('Name')) {
+                        name = line.replace('Name', '').trim();
+                    } else if (line.includes('Branch')) {
+                        branch = line.replace('Branch', '').trim();
+                    } else if (line.includes('Admission Number')) {
+                        admissionNumber = line.replace('Admission Number', '').trim();
+                    }
+                });
+
+                outputElement.innerHTML = `
+                    <p>Name: ${name}</p>
+                    <p>Branch: ${branch}</p>
+                    <p>Admission Number: ${admissionNumber}</p>
+                `;
+            } else {
+                outputElement.innerHTML = '<p>No text detected</p>';
+            }
+        }
     </script>
 </body>
 </html>
