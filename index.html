@@ -3,79 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ID Card OCR</title>
-    <script src="https://cdn.rawgit.com/naptha/tesseract.js/1.0.10/dist/tesseract.js"></script>
+    <title>Barcode Scanner Demo</title>
+    <script src="https://cdn.jsdelivr.net/npm/quagga"></script>
 </head>
 <body>
-    <input type="file" id="fileInput" accept="image/*">
-    <div id="output"></div>
+    <h1>Barcode Scanner Demo</h1>
+    <p>Scan a barcode and see the result below:</p>
+
+    <video id="barcode-scanner" width="100%" height="100%" autoplay></video>
+    <div id="result"></div>
 
     <script>
-        document.getElementById('fileInput').addEventListener('change', handleFile);
-
-        function handleFile(event) {
-            const file = event.target.files[0];
-
-            if (file) {
-                const reader = new FileReader();
-
-                reader.onload = function(e) {
-                    const imageSrc = e.target.result;
-
-                    recognizeText(imageSrc).then((result) => {
-                        displayResult(result);
-                    }).catch((error) => {
-                        console.error('Error recognizing text:', error);
-                    });
-                };
-
-                reader.readAsDataURL(file);
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: document.querySelector("#barcode-scanner"),
+            },
+            decoder: {
+                readers: ["ean_reader", "code_128_reader"],
+            },
+        }, function(err) {
+            if (err) {
+                console.error("Error initializing Quagga: ", err);
+                return;
             }
-        }
+            Quagga.start();
+        });
 
-        function recognizeText(imageSrc) {
-            return Tesseract.recognize(
-                imageSrc,
-                'eng', // Language code (English in this case)
-                {
-                    logger: info => console.log(info),
-                }
-            );
-        }
-
-        function displayResult(result) {
-            const outputElement = document.getElementById('output');
-            outputElement.innerHTML = '';
-
-            if (result && result.data && result.data.text) {
-                const text = result.data.text;
-                const lines = text.split('\n');
-
-                // Extracting relevant information
-                let name = '';
-                let branch = '';
-                let admissionNumber = '';
-
-                lines.forEach(line => {
-                    if (line.includes('Name')) {
-                        name = line.replace('Name', '').trim();
-                    } else if (line.includes('Branch')) {
-                        branch = line.replace('Branch', '').trim();
-                    } else if (line.includes('Admission Number')) {
-                        admissionNumber = line.replace('Admission Number', '').trim();
-                    }
-                });
-
-                outputElement.innerHTML = `
-                    <p>Name: ${name}</p>
-                    <p>Branch: ${branch}</p>
-                    <p>Admission Number: ${admissionNumber}</p>
-                `;
-            } else {
-                outputElement.innerHTML = '<p>No text detected</p>';
-            }
-        }
+        Quagga.onDetected(function(result) {
+            const code = result.codeResult.code;
+            const resultElement = document.querySelector("#result");
+            resultElement.textContent = `Detected Barcode: ${code}`;
+        });
     </script>
 </body>
 </html>
+
 
